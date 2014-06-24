@@ -1,0 +1,35 @@
+{
+    "name": "zen/data-pdo",
+    "description": "PDO implementation of Zen framework.",
+    "version": "0.1.0-dev",
+    "keywords": [
+        "zen"
+    ],
+    "license": "LGPL-3.0+",
+    "authors": [
+        {
+            "name": "Snakevil Zen",
+            "email": "zsnakevil@gmail.com",
+            "role": "Leader"
+        }
+    ],
+    "require": {
+        "ext-pdo": "*",
+        "zen/core": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Zen\\Data\\Pdo\\": "lib/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "ZenTest\\Data\\Pdo\\": "share/test/"
+        }
+    },
+    "archive": {
+        "exclude": [
+            "/share"
+        ]
+    }
+}
