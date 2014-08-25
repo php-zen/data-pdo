@@ -76,11 +76,9 @@ class Statement extends Core\Component implements IStatement
     /**
      * 获取待执行的语句。
      *
-     * @internal
-     *
      * @return string
      */
-    protected function zenGetQueryString()
+    final public function getQueryString()
     {
         return $this->queryString;
     }

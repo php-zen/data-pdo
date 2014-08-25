@@ -29,7 +29,8 @@
     },
     "archive": {
         "exclude": [
-            "/share"
+            "/share",
+            ".gitignore"
         ]
     }
 }
