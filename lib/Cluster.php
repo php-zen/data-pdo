@@ -21,6 +21,77 @@ use Zen\Core;
 class Cluster extends Core\Component implements ICluster
 {
     /**
+     * 主库链接。
+     *
+     * @internal
+     *
+     * @var IPdo
+     */
+    protected $master;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return IPdo
+     */
+    final public function getMaster()
+    {
+        return $this->master;
+    }
+
+    /**
+     * 从库链接。
+     *
+     * @internal
+     *
+     * @var IPdo
+     */
+    protected $slave;
+
+    /**
+     * inherit
+     *
+     * @param  IPdo $connection 从库链接
+     * @return self
+     */
+    final public function addSlave(IPdo $connection)
+    {
+        if (!$this->slave instanceof IPdo) {
+            if (!is_array($this->slave)) {
+                $this->slave = array();
+            }
+            $this->slave[] = $connection;
+        }
+
+        return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return IPdo
+     */
+    final public function getSlave()
+    {
+        if (!$this->slave) {
+            $this->slave = $this->master;
+        } elseif (is_array($this->slave)) {
+            $this->slave = $this->slave[rand(0, 9999) % count($this->slave)];
+        }
+
+        return $this->slave;
+    }
+
+    /**
+     * 工作库链接。
+     *
+     * @internal
+     *
+     * @var IPdo
+     */
+    protected $worker;
+
+    /**
      * 是否在事务中地标记。
      *
      * @internal
@@ -36,19 +107,11 @@ class Cluster extends Core\Component implements ICluster
      */
     final public function beginTransaction()
     {
+        $this->worker = $this->master;
         $this->inTransaction = true;
 
         return true;
     }
-
-    /**
-     * 主库链接。
-     *
-     * @internal
-     *
-     * @var IPdo
-     */
-    protected $master;
 
     /**
      * {@inheritdoc}
@@ -60,7 +123,7 @@ class Cluster extends Core\Component implements ICluster
         if ($this->inTransaction) {
             $this->inTransaction = false;
 
-            return $this->master->commit();
+            return $this->worker->commit();
         }
 
         return false;
@@ -84,7 +147,9 @@ class Cluster extends Core\Component implements ICluster
      */
     final public function lastInsertId($name = null)
     {
-        return $this->master->lastInsertId($name);
+        $this->worker = $this->master;
+
+        return $this->worker->lastInsertId($name);
     }
 
     /**
@@ -95,11 +160,13 @@ class Cluster extends Core\Component implements ICluster
      */
     final public function prepare($sql)
     {
-        if (!$this->inTransaction && preg_match('/^\s*(select|show)\s+/i', $sql)) {
-            return $this->getSlave()->prepare($sql);
+        if (!$this->inTransaction && !preg_match('/^\s*(select|show)\s+/i', $sql)) {
+            $this->worker = $this->master;
+        } elseif (!$this->worker) {
+            $this->worker = $this->getSlave();
         }
 
-        return $this->master->prepare($sql);
+        return $this->worker->prepare($sql);
     }
 
     /**
@@ -112,7 +179,7 @@ class Cluster extends Core\Component implements ICluster
         if ($this->inTransaction) {
             $this->inTransaction = false;
 
-            return $this->master->rollBack();
+            return $this->worker->rollBack();
         }
 
         return false;
@@ -167,58 +234,5 @@ class Cluster extends Core\Component implements ICluster
     protected function newPdo($dsn, $username, $password)
     {
         return Pdo::connect($dsn, $username, $password);
-    }
-
-    /**
-     * 从库链接。
-     *
-     * @internal
-     *
-     * @var IPdo
-     */
-    protected $slave;
-
-    /**
-     * inherit
-     *
-     * @param  IPdo $connection 从库链接
-     * @return self
-     */
-    final public function addSlave(IPdo $connection)
-    {
-        if (!$this->slave instanceof IPdo) {
-            if (!is_array($this->slave)) {
-                $this->slave = array();
-            }
-            $this->slave[] = $connection;
-        }
-
-        return $this;
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @return IPdo
-     */
-    final public function getMaster()
-    {
-        return $this->master;
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @return IPdo
-     */
-    final public function getSlave()
-    {
-        if (!$this->slave) {
-            $this->slave = $this->master;
-        } elseif (is_array($this->slave)) {
-            $this->slave = $this->slave[rand(0, 9999) % count($this->slave)];
-        }
-
-        return $this->slave;
     }
 }
