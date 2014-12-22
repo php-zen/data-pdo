@@ -1,9 +1,10 @@
 {
     "name": "zen/data-pdo",
-    "description": "PDO implementation of Zen framework.",
-    "version": "0.1.0-dev",
+    "description": "Zen 框架 PDO 扩展包。",
+    "type": "library",
     "keywords": [
-        "zen"
+        "zen",
+        "pdo"
     ],
     "license": "LGPL-3.0+",
     "authors": [
